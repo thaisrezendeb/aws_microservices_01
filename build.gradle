@@ -1,0 +1,63 @@
+buildscript {
+	ext {
+		springBootVersion = '3.2.2'
+	}
+
+	repositories {
+		mavenCentral()
+		maven {
+			url 'https://plugins.gradle.org/m2/'
+		}
+	}
+
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+		classpath('com.palantir.gradle.docker:gradle-docker:0.36.0')
+	}
+}
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.2'
+	id 'io.spring.dependency-management' version '1.0.10.RELEASE'
+	id 'com.palantir.docker' version '0.36.0'
+}
+
+group = 'thaisrezendeb'
+version = '0.0.1-SNAPSHOT'
+
+bootJar {
+	archiveBaseName = 'aws_microservices_01'
+	version = '1.0.0'
+}
+
+task unpack(type: Copy) {
+	dependsOn bootJar
+	from(zipTree(tasks.bootJar.outputs.files.singleFile))
+	into("build/dependency")
+}
+
+docker {
+	name "${project.group}/${project.name}"
+	copySpec.from(tasks.unpack.outputs).into("dependency")
+	buildArgs(['DEPENDENCY': "dependency"])
+}
+
+java {
+	sourceCompatibility = '17'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
